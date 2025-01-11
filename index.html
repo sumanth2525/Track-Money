@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #a3e4d7;  /* Light greenish background */
+            background-image: linear-gradient(135deg, #8BC6EC 0%, #9599E2 100%);
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            animation: fadeIn 2s ease-in;
+            position: relative;
+        }
+
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4); /* Dark overlay for better contrast */
+            z-index: -1;
+        }
+
+        form {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            width: 300px;
+            animation: slideIn 1.5s ease-in-out;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: transform 0.2s ease-in-out, border 0.3s ease-in-out;
+        }
+
+        input:focus {
+            transform: scale(1.05);
+            border: 2px solid #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.7);
+        }
+
+        /* Adding space between Date and Time fields */
+        #date {
+            margin-bottom: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.95); /* Button press effect */
+        }
+
+        @media (max-width: 600px) {
+            form {
+                width: 90%;
+            }
+            button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <form id="expenseForm">
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" required>
+
+        <label for="expenseName">Expense Name:</label>
+        <input type="text" id="expenseName" required>
+
+        <label for="date">Date:</label>
+        <input type="date" id="date" required>
+
+        <label for="time">Time:</label>
+        <input type="time" id="time" required>
+
+        <label for="customDate">Custom Date and Time (optional):</label>
+        <input type="datetime-local" id="customDate">
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('expenseForm');
+
+        // Automatically set the current date and time in separate fields
+        window.onload = function() {
+            const currentDate = new Date();
+            const date = currentDate.toISOString().split('T')[0]; // Get only the date part
+
+            // Get the current time and format it to show only hours and minutes
+            const time = currentDate.toTimeString().split(' ')[0].slice(0, 5); // Slice to get "HH:MM"
+
+            document.getElementById('date').value = date;
+            document.getElementById('time').value = time;
+        }
+
+        // Form submission event listener
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const amount = parseFloat(document.getElementById('amount').value);
+            const expenseName = document.getElementById('expenseName').value;
+            
+            // Check if the user provided a custom date, otherwise use auto-generated date
+            const customDate = document.getElementById('customDate').value;
+            const date = customDate || document.getElementById('date').value;
+            const time = document.getElementById('time').value;
+
+            // Create expense data to send to the sheet
+            const expenseData = {
+                data: {
+                    "Amount": amount,
+                    "Expense Name": expenseName,
+                    "Date": date,
+                    "Time": time
+                }
+            };
+
+            // POST request to Google Sheet via SheetDB API
+            fetch("https://sheetdb.io/api/v1/dtf416u2gbgi3", {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(expenseData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Data successfully posted to Google Sheets:', data);
+                alert("Expense added successfully!");
+            })
+            .catch(error => {
+                console.error('Error posting to Google Sheets:', error);
+                alert("Failed to add expense. Try again!");
+            });
+
+            // Clear form after submission
+            form.reset();
+
+            // Reset the date and time fields to current values after submission
+            const newDate = new Date();
+            document.getElementById('date').value = newDate.toISOString().split('T')[0];
+            document.getElementById('time').value = newDate.toTimeString().split(' ')[0].slice(0, 5);
+        });
+    </script>
+
+</body>
+</html>
